@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>게시판 상세보기</title>
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Noto+Sans+KR:wght@300;400;700&display=swap" rel="stylesheet">
+    <script type="text/javascript"
+            th:src="@{'//dapi.kakao.com/v2/maps/sdk.js?appkey=' + ${@environment.getProperty('kakao.api.scriptKey')}}"></script>
+    <style>
+        body {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start !important;
+            align-items: center;
+            height: 100vh;
+            background-color: #f1f1f1;
+        }
+        .container-fluid {
+            max-width: 1200px;
+            width: 1200px;
+            height: 900px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            border-radius: 10px;
+            background-color: #f1f1f1;
+        }
+        .main {
+            width: 1200px;
+            height: 850px;
+            display: flex;
+            justify-content: flex-start;
+        }
+        .content {
+            display: flex;
+            flex-direction: column;
+            width: 920px;
+            height: 800px;
+            margin: 25px 20px 25px 20px;
+            background-color: #F1F1F1;
+            border-radius: 10px;
+        }
+        .main-card{
+            width: 920px;
+            height: 800px;
+            border-radius: 10px;
+        }
+
+        .main-card .card-header{
+            border-radius: 10px 10px 0 0;
+        }
+
+        .main-card .card-footer{
+            border-radius: 0 0 10px 10px;
+        }
+    </style>
+    <script>
+        const memberId = [[${member.id}]];
+
+        document.addEventListener("DOMContentLoaded", function () {
+            loadComments();
+        })
+
+        function getCsrfToken() {
+            return {
+                header: document.querySelector("meta[name='_csrf_header']").content,
+                token: document.querySelector("meta[name='_csrf']").content
+            }
+        }
+
+        function loadComments() {
+            const boardId = [[${board.id}]];
+            fetch(`/api/comment/${boardId}`)
+                .then(response => response.json())
+                .then(comments => {
+                    let commentList = document.getElementById("commentList");
+                    commentList.innerHTML = "";
+
+                    comments.forEach(comment => {
+                        let listItem = document.createElement("li");
+                        listItem.className = "list-group-item";
+                        listItem.innerHTML = `
+                        <div>
+                            <strong>${comment.memberName}</strong> (${timeAgo(comment.createDateTime)})<br>
+                            ${comment.content}
+                        </div>
+                        ${comment.memberId === memberId ? `<button class="btn btn-danger btn-sm" onclick="deleteComment(${comment.id})">삭제</button>` : ""}
+                    `;
+                        commentList.appendChild(listItem);
+                    });
+                });
+        }
+
+        function addComment() {
+            const commentContent = document.getElementById('commentContent').value.trim();
+
+            if (commentContent.length < 1) {
+                alert('댓글은 한 글자 이상 입력해야 합니다.');
+                return; // 함수 종료
+            }
+
+            const boardId = [[${board.id}]];
+            const content = document.getElementById("commentContent").value;
+            let csrf = getCsrfToken();
+
+            fetch("/api/comment", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    [csrf.header]: csrf.token
+                },
+                body: new URLSearchParams({boardId: boardId, content: content})
+            }).then(() => {
+                document.getElementById("commentContent").value = "";
+                loadComments();
+            });
+        }
+
+        function deleteComment(commentId) {
+            let csrf = getCsrfToken();
+            fetch(`/api/comment/${commentId}`, {
+                method: "DELETE",
+                headers: {
+                    [csrf.header]: csrf.token
+                }
+            }).then(() => loadComments());
+        }
+
+        function timeAgo(dateTime) {
+            const now = new Date()
+            const past = new Date(dateTime)
+            const diffInSeconds = Math.floor((now - past) / 1000)
+
+            if (diffInSeconds < 60) {
+                if (diffInSeconds < 1) {
+                    return `1초 전`
+                }
+                return `${diffInSeconds}초 전`
+            }
+
+            const diffInMinutes = Math.floor(diffInSeconds / 60)
+            if (diffInMinutes < 60) {
+                return `${diffInMinutes}분 전`
+            }
+
+            const diffInHours = Math.floor(diffInMinutes / 60);
+            if (diffInHours < 24) {
+                return `${diffInHours}시간 전`
+            }
+
+            const diffInDays = Math.floor(diffInHours / 24);
+            if (diffInDays < 30) {
+                return `${diffInDays}일 전`
+            }
+
+            const diffInMonths = Math.floor(diffInDays / 30);
+            if (diffInMonths < 12) {
+                return `${diffInMonths}개월 전`
+            }
+
+            const diffInYears = Math.floor(diffInMonths / 12);
+            return `${diffInYears}년 전`
+        }
+
+        function deleteBoard() {
+            const boardId = [[${board.id}]];
+            if (!confirm("정말 이 게시글을 삭제하시겠습니까?")) {
+                return;
+            }
+            let csrf = getCsrfToken();
+
+            fetch("/api/board/delete", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json; charset=utf-8",
+                    [csrf.header]: csrf.token
+                },
+                body: JSON.stringify([boardId])  // ⬅ 배열 형태로 변경
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status === 200) {
+                        alert("게시글을 삭제했습니다.");
+                        location.href = "/board";
+                    } else {
+                        alert("게시글 삭제에 실패했습니다.");
+                        console.error("서버 응답 데이터:", data);
+                    }
+                })
+                .catch(error => {
+                    console.error("삭제 요청 중 오류 발생:", error);
+                    alert("삭제 중 오류가 발생했습니다.");
+                })
+        }
+    </script>
+</head>
+<body>
+<div class="container-fluid">
+    <div th:replace="~{fragments/navbar :: custom-navbar}"></div>
+
+    <div class="main">
+        <div th:replace="~{fragments/side :: side}"></div>
+
+        <script>
+            document.getElementById("side_lesson").style.color = "#f1f1f1";
+            document.getElementById("side_lesson").style.background = "#adb5bd"
+        </script>
+
+        <link rel="stylesheet" th:href="@{/css/board/register.css}">
+        <link rel="stylesheet" th:href="@{/css/lessonSearch.css}">
+        <link rel="stylesheet" th:href="@{/css/mainTool.css}">
+
+        <div class="content card main-card">
+            <div class="card-header">
+                <div>
+                    <h2 th:text="${board.title}"></h2>
+                </div>
+                <div>
+                    조회수 : <span th:text="${board.view}"></span>
+                </div>
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered table-striped">
+                    <tbody>
+                    <tr>
+                        <th class="text-center">카테고리</th>
+                        <td th:text="${board.categoryName}"></td>
+                    </tr>
+                    <tr>
+                        <th class="text-center">작성일</th>
+                        <td th:text="${board.formattedCreateDateTime}"></td>
+                    </tr>
+                    <tr>
+                        <th class="text-center">작성자</th>
+                        <td th:text="${board.memberName}"></td>
+                    </tr>
+                    <tr>
+                        <th class="text-center">내용</th>
+                        <td colspan="9">
+                            <pre th:text="${board.context}"
+                                 style="font-family: inherit; white-space: pre-wrap; word-break: break-word;"></pre>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div class="comment-container">
+                    <div><h5>댓글</h5></div>
+                    <div th:if="${member != null}">
+                        <textarea id="commentContent" class="form-control" placeholder="댓글을 입력하세요"></textarea>
+                        <button class="btn btn-primary mt-2" onclick="addComment()">댓글 작성</button>
+                    </div>
+
+                    <div>
+                        <ul id="commentList" class="list-group mb-3"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer text-center" id="buttonContainer">
+                <button type="button" class="btn btn-secondary" onclick="history.back()">이전으로</button>
+                <div th:if="${member.id == board.memberId}">
+                    <button class="btn btn-success" th:onclick="|location.href='/board/' + ${board.id} + '/edit'|">수정
+                    </button>
+                    <button class="btn btn-danger" id="deleteBtn" onclick="deleteBoard()">삭제</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{https://code.jquery.com/jquery-3.5.1.slim.min.js}"></script>
+<script th:src="@{https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js}"></script>
+
+</body>
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Noto+Sans+KR:wght@300;400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            width: 350px;
+            text-align: center;
+        }
+
+        label {
+            font-size: 14px;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+            text-align: left;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #fff;
+        }
+
+        .floating-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #007bff;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 50px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: background 0.3s, transform 0.2s;
+        }
+
+        .floating-button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+
+    </style>
+</head>
+<body>
+<div class="container mt-4">
+    <label for="foodSelect">음식 선택:</label>
+    <select id="foodSelect" placeholder="음식을 선택하세요"></select>
+
+    <button class="floating-button" onclick="selectFood()">선택</button>
+</div>
+
+<input type="hidden" id="selectedFoodEnergy" />
+<input type="hidden" id="selectedFoodId" />
+
+<script>
+    let foodSelect = new TomSelect("#foodSelect", {
+        valueField: "id",
+        labelField: "name",
+        searchField: "name",
+        maxItems: 1,
+        create: false,
+        load: function(query, callback) {
+            if (!query.length) return callback();
+            $.ajax({
+                url: "/api/food/all",
+                type: "GET",
+                data: { name: query, limit: 100 },
+                dataType: "json",
+                success: function (response) {
+
+                    callback(response.data);
+                },
+                error: function () {
+                    callback();
+                }
+            });
+        },
+        render: {
+            option: function(data, escape) {
+                return `
+                <div class="ts-option p-2 border-bottom bg-white text-dark">
+                    <strong>${escape(data.name)}</strong>
+                </div>
+            `;
+            },
+            item: function(data, escape) {
+                return `<div class="ts-item badge bg-primary text-white px-2 py-1 rounded">${escape(data.name)}</div>`;
+            }
+        }
+    });
+
+    const style = document.createElement("style");
+    style.innerHTML = `
+    .ts-dropdown {
+        background-color: white !important;
+        z-index: 1050 !important;
+        border: 1px solid #dee2e6;
+        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .ts-option {
+        cursor: pointer;
+        transition: background-color 0.2s ease-in-out;
+    }
+
+    .ts-option:hover {
+        background-color: #f8f9fa;
+    }
+
+    .ts-item {
+        display: inline-block;
+        font-size: 0.9rem;
+    }
+`;
+    document.head.appendChild(style);
+
+
+    foodSelect.on("change", function () {
+        let selectedId = foodSelect.getValue();
+        if (!selectedId) return;
+
+        $.ajax({
+            url: "/api/food/search",
+            type: "GET",
+            data: { name: foodSelect.options[selectedId]?.name || "" },
+            dataType: "json",
+            success: function (response) {
+                if (response.data.length > 0) {
+                    $("#selectedFoodEnergy").val(response.data[0].calories);
+                    $("#selectedFoodId").val(response.data[0].id);
+                } else {
+                    $("#selectedFoodEnergy").val('');
+                }
+            },
+            error: function (error) {
+                console.error("Error fetching energy consumption:", error);
+            }
+        });
+    });
+
+    function selectFood() {
+
+        const urlParams = new URLSearchParams(window.location.search);
+        let foodId = urlParams.get("foodId");
+
+        let selectedId = $("#selectedFoodId").val();
+        let selectedText = foodSelect.options[selectedId]?.name || "";
+        let foodConsumption = $("#selectedFoodEnergy").val();
+
+        if (!selectedId) {
+            alert("음식을 선택하세요!");
+            return;
+        }
+
+        if (window.opener && !window.opener.closed) {
+            let foodIdElement = window.opener.document.getElementById(`foodId_${foodId}`);
+            let foodNameElement = window.opener.document.getElementById(`foodName_${foodId}`)
+            let foodConsumptionElement = window.opener.document.getElementById(`foodConsumption_${foodId}`)
+            let foodHundredGramElement = window.opener.document.getElementById(`foodHundredGram_${foodId}`)
+
+
+            if (foodIdElement) {
+                foodIdElement.value = selectedId;
+            }
+
+            if (foodNameElement) {
+                foodNameElement.value = selectedText;
+            }
+
+            if (foodConsumptionElement) {
+                foodConsumptionElement.value = foodConsumption;
+            }
+
+            if (foodHundredGramElement) {
+                foodHundredGramElement.focus();
+            }
+        } else {
+            alert("부모 창이 존재하지 않습니다.");
+        }
+        window.close();
+    }
+</script>
+</body>
+</html>
