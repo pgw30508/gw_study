@@ -1,0 +1,204 @@
+:root {
+    --light-gray: #f1f1f1;
+    --table-header-bg: #f8f9fa;
+    --table-border-color: #dee2e6;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+#kakaoMap {
+    width: 100%;
+    height: 400px;
+}
+
+.modal {
+    display: none;
+}
+
+.modal-dialog,
+.card,
+.main-card {
+    border-radius: 10px;
+    border: none;
+}
+
+.modal-dialog {
+    max-width: 780px;
+}
+
+.modal-header,
+.card-header {
+    background-color: white;
+    padding-top: 20px;
+    padding-bottom: 5px;
+}
+
+.modal-header {
+    background-color: var(--light-gray);
+    border-radius: 10px 10px 0 0;
+}
+
+.modal-footer,
+.card-footer {
+    background-color: white;
+    border-radius: 0 0 10px 10px;
+}
+
+#pagination {
+    text-align: center;
+    margin-top: 10px;
+}
+
+#pagination button {
+    border: none;
+    background-color: white;
+    padding: 8px 16px;
+    margin: 0 4px;
+    cursor: pointer;
+}
+
+#pagination button:hover {
+    background-color: var(--light-gray);
+}
+
+#pagination button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+#resultSearch a {
+    color: black;
+    text-decoration: none;
+}
+
+#resultSearch a:hover {
+    text-decoration: none;
+}
+
+.card-body {
+    height: 647px;
+    font-size: 12px;
+    padding: 5px 16px 16px 16px;
+    background: white;
+}
+
+.form-group {
+    margin-bottom: 0;
+    padding-bottom: 10px;
+}
+
+.form-control {
+    font-size: 12px;
+}
+
+button {
+    font-size: 13px;
+}
+
+table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    box-shadow: 0 4px 8px var(--shadow-color);
+    overflow: hidden;
+}
+
+th, td {
+    padding: 8px;
+    text-align: left;
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+th:nth-child(1), td:nth-child(1) {
+    width: 50px;
+}
+
+th:nth-child(2), td:nth-child(2) {
+    width: calc(((100% - 170px) / 3) * 2);
+}
+
+th:nth-child(3), td:nth-child(3) {
+    width: calc((100% - 170px) / 3);
+}
+
+th:nth-child(4), td:nth-child(4) {
+    width: 120px;
+}
+
+.small-btn {
+    padding: 4px 10px;
+    font-size: 14px;
+}
+
+.checkbox-container input,
+.checkbox-container label {
+    font-size: 12px;
+    display: inline-block;
+}
+
+#search-label {
+    width: 130px;
+    text-align: left;
+    padding-left: 10px;
+    margin-right: 25px;
+}
+
+.checkbox-container div {
+    padding-right: 10px;
+}
+
+.main-card {
+    width: 920px;
+    height: 800px;
+}
+
+.table thead th {
+    background-color: var(--table-header-bg);
+    font-weight: 600;
+    font-size: 0.8rem;
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--table-border-color);
+}
+
+.table tbody td {
+    padding: 15px 15px;
+    font-size: 0.8rem;
+    border: none;
+    border-bottom: 1px solid var(--table-border-color);
+}
+
+.table tbody td:nth-child(2) {
+    text-align: left;
+}
+
+select.form-control {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><path fill="%23333" d="M1.53 3.59l4.59 4.58 4.59-4.58 1.41 1.41-6 6-6-6z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+select.form-control::-ms-expand {
+    display: none;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    margin-right: 10px;
+}
+
+.radio-option input[type="radio"] {
+    margin-right: 5px;
+}
