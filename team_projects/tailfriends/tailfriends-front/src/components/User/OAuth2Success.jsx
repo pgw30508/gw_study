@@ -42,7 +42,7 @@ const OAuth2Success = () => {
 
                     if (!nc) {
                         const chat = new ncloudchat.Chat();
-                        await chat.initialize("8e8e626c-08d8-40e4-826f-185b1d1b8c4a"); // 여기에 실제 프로젝트 ID
+                        await chat.initialize("02da5c8f-0b4a-4a04-8082-ac8aaa05ea57"); // 여기에 실제 프로젝트 ID
                         await chat.connect({
                             id: "ncid" + String(userData.id),
                             name: userData.nickname,
