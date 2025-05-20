@@ -17,10 +17,10 @@ spring:
 
 
   datasource:
-    url: jdbc:mysql://db-33p2cg-kr.vpc-pub-cdb.ntruss.com/tailfriends?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    url: jdbc:mysql://localhost:3306/tailfriends?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     driver-class-name: com.mysql.cj.jdbc.Driver
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    username: root
+    password: 1234
 
     hikari:
       maximum-pool-size: 10
@@ -50,10 +50,10 @@ spring:
         order_updates: true
 
   rabbitmq:
-    host: tailfreinds-notify-n89pl.kr.vrmq.naverncp.com
+    host: localhost
     port: 5672
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    username: guest
+    password: guest
 
   security:
     oauth2:
@@ -107,11 +107,11 @@ spring:
             user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
             user-name-attribute: sub
 
-  data:
-    redis:
-      host: ${REDIS_HOST}
-      port: ${REDIS_PORT}
-      password: ${DB_PASSWORD}
+#  data:
+#    redis:
+#      host: ${REDIS_HOST}
+#      port: ${REDIS_PORT}
+#      password: ${DB_PASSWORD}
 jwt:
   secret: ${JWT_SECRET}
   token-validity: 86400

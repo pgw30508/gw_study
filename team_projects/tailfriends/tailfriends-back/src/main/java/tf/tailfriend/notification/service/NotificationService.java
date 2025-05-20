@@ -87,8 +87,7 @@ public void sendNotificationToUser(NotificationDto dto) {
     String image = "";
     String contentId = dto.getContent();
 //    String imagePrefix = "https://kr.object.ncloudstorage.com/tailfriends-buck/uploads/notification";
-    String imagePrefix = "https://kr.object.ncloudstorage.com/bitcamp-72";
-
+    String imagePrefix = "http://localhost:8080/images";
     try {
         switch (dto.getNotifyTypeId()) {
             case 1 -> {
