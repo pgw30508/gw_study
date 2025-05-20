@@ -12,12 +12,18 @@ const ChatList = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [search, setSearch] = useState("");
 
+    // 메시지 content 파싱 유틸
     const parseMessage = (msg) => {
+        console.log("[parseMessage] raw msg.content:", msg.content); // 디버깅 추가
         let parsed;
         try {
             parsed = JSON.parse(msg.content);
-        } catch {
-            parsed = { customType: "TEXT", content: msg.content };
+            if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+                parsed = { customType: "TEXT", content: String(msg.content) };
+            }
+        } catch (e) {
+            console.warn("[parseMessage] JSON.parse 실패:", e);
+            parsed = { customType: "TEXT", content: String(msg.content) };
         }
 
         let typeId = 1;
@@ -39,6 +45,7 @@ const ChatList = () => {
     useEffect(() => {
         if (!user || !nc) return;
 
+        // 채팅방 리스트 조회 및 초기화
         const fetchRooms = async () => {
             try {
                 setIsLoading(true);
@@ -54,26 +61,38 @@ const ChatList = () => {
                     const ch = edge.node;
                     await nc.subscribe(ch.id);
 
+                    console.log("[fetchRooms] 채널 last_message.content:", ch.last_message?.content); // 디버깅 추가
+
                     let lastMessageText = "";
 
                     try {
                         const raw = ch.last_message?.content;
-                        const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+                        let parsed;
+                        if (typeof raw === "string") {
+                            parsed = JSON.parse(raw);
+                            console.log("[fetchRooms] 파싱된 last_message:", parsed); // 디버깅 추가
 
-                        const customType = parsed.customType;
-                        const content = parsed.content;
+                            if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+                                lastMessageText = String(raw);
+                            } else {
+                                const customType = parsed.customType;
+                                const content = parsed.content;
 
-                        if (typeof content === "string") {
-                            lastMessageText = content;
-                        } else if (customType === "PETSITTER" && content?.sitterName) {
-                            lastMessageText = `[펫시터] ${content.sitterName}`;
-                        } else if ((customType === "MATCH" || customType === "TRADE") && content?.text) {
-                            lastMessageText = content.text;
+                                if (typeof content === "string") {
+                                    lastMessageText = content;
+                                } else if (customType === "PETSITTER" && content?.sitterName) {
+                                    lastMessageText = `[펫시터] ${content.sitterName}`;
+                                } else if ((customType === "MATCH" || customType === "TRADE") && content?.text) {
+                                    lastMessageText = content.text;
+                                } else {
+                                    lastMessageText = content;
+                                }
+                            }
                         } else {
-                            lastMessageText = "알 수 없는 메시지";
+                            lastMessageText = "메시지 없음";
                         }
                     } catch (err) {
-                        console.error("last_message 파싱 실패:", err);
+                        console.error("[fetchRooms] last_message 파싱 실패:", err);
                         lastMessageText = "메시지를 불러올 수 없음";
                     }
 
@@ -82,9 +101,9 @@ const ChatList = () => {
                         const unreadResult = await nc.unreadCount(ch.id);
                         unreadCount = unreadResult.unread || 0;
                     } catch (err) {
-                        console.warn(`채널 ${ch.id} unreadCount 조회 실패`, err);
+                        console.warn(`[fetchRooms] 채널 ${ch.id} unreadCount 조회 실패`, err);
                     }
-                    // console.log(ch.last_message?.content);
+
                     result.push({
                         id: ch.id,
                         name: room.nickname,
@@ -98,13 +117,15 @@ const ChatList = () => {
                 result.sort((a, b) => new Date(b.lastMessageSentAt) - new Date(a.lastMessageSentAt));
                 setChatList(result);
             } catch (e) {
-                console.error("채팅방 정보 조회 실패:", e);
+                console.error("[fetchRooms] 채팅방 정보 조회 실패:", e);
             } finally {
                 setIsLoading(false);
             }
         };
 
+        // 실시간 메시지 수신 핸들러
         const handleReceiveMessage = async (channel, msg) => {
+            console.log("[handleReceiveMessage] 수신된 메시지:", msg); // 디버깅 추가
             const { parsed } = parseMessage(msg);
             const isMine = msg.sender.id === `ncid${user.id}`;
             if (isMine) return;
@@ -123,7 +144,7 @@ const ChatList = () => {
             try {
                 await sendChatNotification(payload);
             } catch (err) {
-                console.error("알림 전송 실패:", err);
+                console.error("[handleReceiveMessage] 알림 전송 실패:", err);
             }
 
             setChatList((prev) => {
@@ -132,20 +153,24 @@ const ChatList = () => {
                 if (idx !== -1) {
                     let text = "";
                     try {
-                        const parsed = JSON.parse(msg.content);
-                        if (typeof parsed.content === "string") {
+                        let parsed = JSON.parse(msg.content);
+                        if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+                            text = String(msg.content);
+                        } else if (typeof parsed.content === "string") {
                             text = parsed.content;
                         } else if (parsed.customType === "PETSITTER" && parsed.content?.sitterName) {
                             text = `[펫시터] ${parsed.content.sitterName}`;
-                        } else if (parsed.customType === "MATCH" && parsed.content?.text) {
-                            text = parsed.content.text;
-                        } else if (parsed.customType === "TRADE" && parsed.content?.text) {
+                        } else if (
+                            (parsed.customType === "MATCH" || parsed.customType === "TRADE") &&
+                            parsed.content?.text
+                        ) {
                             text = parsed.content.text;
                         } else {
-                            text = "알 수 없는 메시지";
+                            text = String(msg.content);
                         }
-                    } catch {
-                        text = msg.content;
+                    } catch (e) {
+                        console.warn("[handleReceiveMessage] 메시지 파싱 실패:", e);
+                        text = String(msg.content);
                     }
 
                     updated[idx] = {
@@ -157,6 +182,7 @@ const ChatList = () => {
 
                     updated.sort((a, b) => new Date(b.lastMessageSentAt) - new Date(a.lastMessageSentAt));
                 }
+                console.log("[handleReceiveMessage] updated chatList:", updated); // 디버깅 추가
                 return updated;
             });
         };

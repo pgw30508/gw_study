@@ -138,7 +138,7 @@ const ProtectedRoute = () => {
                     id: ch.id,
                     name: room.nickname,
                     photo: room.profileUrl,
-                    lastMessage: ch.last_message?.content || "",
+                    lastMessage: ch.last_message?.content != null ? String(ch.last_message.content) : "",
                     lastMessageSentAt: ch.last_message?.sended_at || ch.updated_at,
                     unreadCount: (await nc.unreadCount(ch.id)).unread || 0,
                 });

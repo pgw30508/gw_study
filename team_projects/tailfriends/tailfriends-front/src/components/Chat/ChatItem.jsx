@@ -6,16 +6,22 @@ const parseLastMessage = (msg) => {
     try {
         const parsed = JSON.parse(msg);
 
+        // 문자열 또는 숫자 등 원시 타입이 올 경우 그대로 반환
+        if (typeof parsed === "string" || typeof parsed === "number") {
+            return String(parsed);
+        }
+
+        // 객체 타입인 경우 커스텀 타입 분기 처리
         const type = parsed.customType;
         const content = parsed.content;
 
-        if (typeof content === "string") return content;
+        if (typeof content === "string" || typeof content === "number") return String(content);
         if (type === "PETSITTER" && content?.sitterName) return `[펫시터] ${content.sitterName}`;
         if ((type === "MATCH" || type === "TRADE") && content?.text) return content.text;
 
-        return "알 수 없는 메시지";
+        return String(content); // content가 객체 등일 경우 stringify or fallback
     } catch (e) {
-        return msg;
+        return String(msg); // 파싱 실패 시 문자열로 변환해서 반환
     }
 };
 
