@@ -14,19 +14,10 @@ const ChatList = () => {
 
     const parseMessage = (msg) => {
         let parsed;
-        const raw = msg.content;
-
-        if (typeof raw === "string" || typeof raw === "number") {
-            try {
-                parsed = JSON.parse(raw);
-            } catch {
-                parsed = { customType: "TEXT", content: raw };
-            }
-        } else if (typeof raw === "object" && raw !== null) {
-            parsed = raw;
-        } else {
-            // 숫자나 다른 타입일 경우 강제 래핑
-            parsed = { customType: "TEXT", content: String(raw) };
+        try {
+            parsed = JSON.parse(msg.content);
+        } catch {
+            parsed = { customType: "TEXT", content: msg.content };
         }
 
         let typeId = 1;
@@ -58,38 +49,31 @@ const ChatList = () => {
                     const filter = { name: room.uniqueId };
                     const channels = await nc.getChannels(filter, {}, { per_page: 1 });
                     const edge = (channels.edges || [])[0];
-                    if (!edge) {
-                        console.warn(`❌ 채널 없음: roomId=${room.uniqueId}`);
-                        continue;
-                    }
+                    if (!edge) continue;
 
                     const ch = edge.node;
                     await nc.subscribe(ch.id);
 
                     let lastMessageText = "";
-                    const raw = ch.last_message?.content;
 
                     try {
-                        console.debug("📨 원본 메시지(raw):", raw);
-
+                        const raw = ch.last_message?.content;
                         const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-                        console.debug("✅ 파싱된 메시지:", parsed);
 
-                        const customType = parsed?.customType || "TEXT";
-                        const content = parsed?.content;
+                        const customType = parsed.customType;
+                        const content = parsed.content;
 
-                        if (typeof parsed.content === "string" || typeof parsed.content === "number")  {
-                            lastMessageText = String(content);
+                        if (typeof content === "string") {
+                            lastMessageText = content;
                         } else if (customType === "PETSITTER" && content?.sitterName) {
                             lastMessageText = `[펫시터] ${content.sitterName}`;
                         } else if ((customType === "MATCH" || customType === "TRADE") && content?.text) {
                             lastMessageText = content.text;
                         } else {
-                            console.warn("⚠️ 예상치 못한 메시지 형식:", parsed);
                             lastMessageText = "알 수 없는 메시지";
                         }
                     } catch (err) {
-                        console.error("❌ last_message 파싱 실패:", err, " / raw:", raw);
+                        console.error("last_message 파싱 실패:", err);
                         lastMessageText = "메시지를 불러올 수 없음";
                     }
 
@@ -100,12 +84,12 @@ const ChatList = () => {
                     } catch (err) {
                         console.warn(`채널 ${ch.id} unreadCount 조회 실패`, err);
                     }
-
+                    // console.log(ch.last_message?.content);
                     result.push({
                         id: ch.id,
                         name: room.nickname,
                         photo: room.profileUrl,
-                        lastMessage: lastMessageText,
+                        lastMessage: typeof lastMessageText === "string" ? lastMessageText : "메시지 오류",
                         lastMessageSentAt: ch.last_message?.sended_at || ch.updated_at,
                         unreadCount,
                     });
@@ -147,25 +131,21 @@ const ChatList = () => {
                 const idx = updated.findIndex((item) => item.id === msg.channel_id);
                 if (idx !== -1) {
                     let text = "";
-                    let parsed = { customType: "TEXT", content: msg.content };
-
                     try {
-                        const temp = JSON.parse(msg.content);
-                        if (typeof temp === "object" && temp !== null) {
-                            parsed = temp;
+                        const parsed = JSON.parse(msg.content);
+                        if (typeof parsed.content === "string") {
+                            text = parsed.content;
+                        } else if (parsed.customType === "PETSITTER" && parsed.content?.sitterName) {
+                            text = `[펫시터] ${parsed.content.sitterName}`;
+                        } else if (parsed.customType === "MATCH" && parsed.content?.text) {
+                            text = parsed.content.text;
+                        } else if (parsed.customType === "TRADE" && parsed.content?.text) {
+                            text = parsed.content.text;
+                        } else {
+                            text = "알 수 없는 메시지";
                         }
                     } catch {
-                        // JSON이 아닐 경우, 그대로 사용
-                    }
-
-                    if (typeof parsed.content === "string" || typeof parsed.content === "number") {
-                        text = String(parsed.content);
-                    } else if (parsed.customType === "PETSITTER" && parsed.content?.sitterName) {
-                        text = `[펫시터] ${parsed.content.sitterName}`;
-                    } else if ((parsed.customType === "MATCH" || parsed.customType === "TRADE") && parsed.content?.text) {
-                        text = parsed.content.text;
-                    } else {
-                        text = typeof msg.content === "string" ? msg.content : "알 수 없는 메시지";
+                        text = msg.content;
                     }
 
                     updated[idx] = {
