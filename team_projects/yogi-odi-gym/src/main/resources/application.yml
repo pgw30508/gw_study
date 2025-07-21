@@ -76,9 +76,9 @@ cloud:
     storage:
       endpoint: https://kr.object.ncloudstorage.com
       region: kr-standard
-      access-key: ENC(jymdZ7bw/7B1p3XiHvrTjbIfRTHAS1X9zg327Va/5Vc2GVEskGIUOQ==)
-      secret-key: ENC(KKLFAF9a67ERD3xojAXA5Dn+IKSjJT3ZjimsyRvGPwtPrOnKOp8f6wYsi7K4bSYyOpnbHAYphnQ=)
-      bucket: yog-img-storage
+      access-key: ENC(m/bNDe7GWD/6JyfXzjNL08L2c9a3oEpuDGL4FAeTqu1GmDrYIhH/YA==)
+      secret-key: ENC(lYv+w5ipmXiiaZ/9bp3OeqO2RoArVCalbyA/22qZCpYhZlZMexJ1OT8TJGOySfgCNUeNg90Z7UI=)
+      bucket: yog-img-storage-gw
 
 kakao:
   api:
